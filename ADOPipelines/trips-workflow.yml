@@ -32,6 +32,7 @@ stages:
     displayName: TRIPS Unit Tests
     steps:
     - task: Go@0
+      displayName: Running Unit Tests
       inputs:
         command: 'test'
         # arguments: 'go test ./tests'

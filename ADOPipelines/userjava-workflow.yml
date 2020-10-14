@@ -32,8 +32,9 @@ stages:
     displayName: USER-JAVA Unit Tests
     steps:
     - task: Maven@3
+      displayName: Running Unit Tests
       inputs:
-        mavenPomFile: 'apis\user-java\pom.xml'
+        mavenPomFile: 'apis/user-java/pom.xml'
         goals: 'test'
         publishJUnitResults: true
         testResultsFiles: '**/surefire-reports/TEST-*.xml'

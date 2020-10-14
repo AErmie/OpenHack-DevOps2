@@ -32,7 +32,8 @@ stages:
     displayName: USER-PROFILE Unit Tests
     steps:
     - task: Npm@1
+      displayName: Running Unit Tests
       inputs:
         command: 'custom'
-        workingDir: '/apis/userprofile/'
+        workingDir: 'apis/userprofile/'
         customCommand: 'npm run test'
