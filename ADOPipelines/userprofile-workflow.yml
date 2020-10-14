@@ -36,4 +36,4 @@ stages:
       inputs:
         command: 'custom'
         workingDir: 'apis/userprofile/'
-        customCommand: 'npm run test'
+        customCommand: 'run test'
