@@ -27,6 +27,7 @@ stages:
         Dockerfile: 'apis/poi/web/Dockerfile'
 - stage: UnitTests
   displayName: Execute Unit Tests
+  jobs:
   - job: UnitTest
     displayName: POI Unit Tests
     steps:
