@@ -23,4 +23,4 @@ stages:
         containerRegistry: 'AzContainerRegistry'
         repository: 'POI'
         command: 'buildAndPush'
-        Dockerfile: 'apis/poi/Dockerfile'
+        Dockerfile: 'apis/poi/web/Dockerfile'
