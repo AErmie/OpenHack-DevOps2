@@ -1,4 +1,4 @@
-name: POI Workflow
+name: POI (Point Of Interests) API Workflow
 
 trigger:
   branches:
@@ -22,19 +22,16 @@ stages:
       displayName: 'Docker Build and Push'
       inputs:
         containerRegistry: 'AzContainerRegistry'
-        repository: 'POI'
+        repository: 'devopsoh/api-poi'
         command: 'buildAndPush'
         Dockerfile: 'apis/poi/web/Dockerfile'
-- stage: UnitTest
-  displayName: Unit Tests
-  jobs:
   - job: UnitTest
-    displayName: UnitTest
+    displayName: POI Unit Tests
     steps:
     - task: DotNetCoreCLI@2
-      displayName: 'Run unit tests'
+      displayName: 'Running unit tests'
       inputs:
         command: 'test'
-        arguments: '--no-build'
+        # arguments: '--no-build'
         publishTestResults: true
-        projects: 'apis\poi\tests\UnitTests\UnitTests.csproj'
+        projects: 'apis/poi/tests/UnitTests/UnitTests.csproj'
