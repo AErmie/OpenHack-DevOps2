@@ -12,15 +12,15 @@ pool:
   vmImage: 'ubuntu-latest'
 
 stages:
-- stage: string  # name of the stage (A-Z, a-z, 0-9, and underscore)
-  displayName: string  # friendly name to display in the UI
+- stage: BuildImage
+  displayName: Build POI Container Image
   jobs:
-  - job: string  # name of the job (A-Z, a-z, 0-9, and underscore)
-    displayName: string  # friendly name to display in the UI
+  - job: DockerBuild
+    displayName: Docker Build and Push
     steps: 
     - task: Docker@2
       inputs:
         containerRegistry: 'AzContainerRegistry'
         repository: 'POI'
         command: 'buildAndPush'
-        Dockerfile: '**/Dockerfile'
+        Dockerfile: 'apis/poi/Dockerfile'
