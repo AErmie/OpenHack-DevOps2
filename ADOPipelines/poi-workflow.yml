@@ -19,8 +19,22 @@ stages:
     displayName: Docker Build and Push
     steps: 
     - task: Docker@2
+      displayName: 'Docker Build and Push'
       inputs:
         containerRegistry: 'AzContainerRegistry'
         repository: 'POI'
         command: 'buildAndPush'
         Dockerfile: 'apis/poi/web/Dockerfile'
+- stage: UnitTest
+  displayName: Unit Tests
+  jobs:
+  - job: UnitTest
+    displayName: UnitTest
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Run unit tests'
+      inputs:
+        command: 'test'
+        arguments: '--no-build'
+        publishTestResults: true
+        projects: 'apis\poi\tests\UnitTests\UnitTests.csproj'
