@@ -1,0 +1,39 @@
+name: USER-PROFILE API Workflow
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - /apis/userprofile/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: BuildImage
+  displayName: Build USER-PROFILE Container Image
+  jobs:
+  - job: DockerBuild
+    displayName: Docker Build and Push
+    steps: 
+    - task: Docker@2
+      displayName: 'Docker Build and Push'
+      inputs:
+        containerRegistry: 'AzContainerRegistry'
+        repository: 'devopsoh/api-userprofile'
+        command: 'buildAndPush'
+        Dockerfile: 'apis/userprofile/Dockerfile'
+- stage: UnitTests
+  displayName: Execute Unit Tests
+  jobs:
+  - job: UnitTest
+    displayName: USER-PROFILE Unit Tests
+    steps:
+    - task: Npm@1
+      displayName: Running Unit Tests
+      inputs:
+        command: 'custom'
+        workingDir: 'apis/userprofile/'
+        customCommand: 'run test'
