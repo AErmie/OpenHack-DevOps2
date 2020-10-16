@@ -4,9 +4,10 @@ trigger:
   branches:
     include:
       - main
+      - master
   paths:
     include:
-      - /apis/poi/*
+      - apis/poi/*
 
 pool:
   vmImage: 'ubuntu-latest'

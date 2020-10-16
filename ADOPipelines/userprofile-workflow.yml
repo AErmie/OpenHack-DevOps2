@@ -4,9 +4,10 @@ trigger:
   branches:
     include:
       - main
+      - master
   paths:
     include:
-      - /apis/userprofile/*
+      - apis/userprofile/*
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -25,15 +26,15 @@ stages:
         repository: 'devopsoh/api-userprofile'
         command: 'buildAndPush'
         Dockerfile: 'apis/userprofile/Dockerfile'
-- stage: UnitTests
-  displayName: Execute Unit Tests
-  jobs:
-  - job: UnitTest
-    displayName: USER-PROFILE Unit Tests
-    steps:
-    - task: Npm@1
-      displayName: Running Unit Tests
-      inputs:
-        command: 'custom'
-        workingDir: 'apis/userprofile/'
-        customCommand: 'run test'
+# - stage: UnitTests
+#   displayName: Execute Unit Tests
+#   jobs:
+#   - job: UnitTest
+#     displayName: USER-PROFILE Unit Tests
+#     steps:
+#     - task: Npm@1
+#       displayName: Running Unit Tests
+#       inputs:
+#         command: 'custom'
+#         workingDir: 'apis/userprofile/'
+#         customCommand: 'run test'

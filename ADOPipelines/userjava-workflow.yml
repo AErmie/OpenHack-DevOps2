@@ -4,9 +4,10 @@ trigger:
   branches:
     include:
       - main
+      - master
   paths:
     include:
-      - /apis/user-java/*
+      - apis/user-java/*
 
 pool:
   vmImage: 'ubuntu-latest'
