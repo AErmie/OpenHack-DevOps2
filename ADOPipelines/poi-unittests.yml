@@ -28,62 +28,41 @@ stages:
 #         repository: 'devopsoh/api-poi'
 #         command: 'buildAndPush'
 #         Dockerfile: 'apis/poi/web/Dockerfile'
-- stage: BuildEnv
-  displayName: .NET Setup, Restore, and Build
-  jobs:
-  - job: BuildEnv
-    displayName: .NET Build Environment
+- stage: RunUnitTest
+  displayName: Run Unit Tests
+  jobs:  
+  - job: RunUnitTest
+    displayName: Run Unit Tests
     steps:
-    - task: UseDotNet@2
-      displayName: 'Installing .NET 5.0.x into environment'  
-      inputs:
-        version: '5.0.x'
-        includePreviewVersions: true # Required for preview versions
-    - task: UseDotNet@2
-      displayName: 'Installing .NET 3.0.x into environment'  
-      inputs:
-        version: '3.0.x'
-        packageType: runtime
-
-  - job: RestoreDependencies
-    displayName: Restore Dependencies
-    steps:
-    - task: DotNetCoreCLI@2
-      displayName: 'Restoring project dependencies'  
-      inputs:
-        command: 'restore'
-        feedsToUse: 'select'
-        projects: 'apis/poi/poi.sln'
-
-  - job: BuildProj
-    displayName: Build Project
-    steps:
-    - task: DotNetCoreCLI@2
-      displayName: 'Build .NET Project'  
-      inputs:
-        command: 'build'
-        projects: 'apis/poi/poi.sln'
-
-- stage: UnitTests
-  displayName: Execute Unit Tests
-  jobs:
-  - job: UnitTest
-    displayName: POI Unit Tests
-    steps:
-    - task: DotNetCoreCLI@2
-      displayName: Running Unit Tests
-      inputs:
-        command: 'test'
-        arguments: '--logger:trx'
-        projects: 'apis/poi/tests/UnitTests/UnitTests.csproj'
-        publishTestResults: true
+      - task: UseDotNet@2
+        displayName: Install .NET SKD 2.1.x
+        inputs:
+          packageType: 'sdk'
+          version: '2.1.504'
+      - task: DotNetCoreCLI@2
+        displayName: Restore Project Dependencies
+        inputs:
+          command: 'restore'
+          projects: 'apis/poi/poi.sln'
+          feedsToUse: 'select'
+      - task: DotNetCoreCLI@2
+        displayName: Build Solution
+        inputs:
+          command: 'build'
+          projects: 'apis/poi/poi.sln'
+      - task: DotNetCoreCLI@2
+        displayName: Execute .NET Unit Tests
+        inputs:
+          command: 'test'
+          projects: 'apis/poi/tests/UnitTests/UnitTests.csproj'
+          arguments: '--logger:trx'
   - job: CreateWorkItem
-    displayName: Create Work-Item (on failure)
-    dependsOn: UnitTest
-    condition: failed()
+    displayName: Create Work-Iitem on Unit Test Failure
+    dependsOn: RunUnitTest
+    condition: failed() # this job will only run if rununittest fails
     steps:
-    - task: CreateWorkItem@1
-      displayName: 'Create work item on test failure'
-      inputs:
-        workItemType: Issue
-        title: 'Build $(Build.BuildId) failed'
+      - task: CreateWorkItem@1
+        displayName: Create Work-Iitem on Unit Test Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Build $(Build.BuildId) failed'
