@@ -44,7 +44,7 @@ stages:
           mavenAuthenticateFeed: false
           effectivePomSkip: false
           sonarQubeRunAnalysis: false
-      - task: Maven@3
+      - task: Maven@3
         displayName: 'Execute JAVA Unit Tests'
         inputs:
           mavenPomFile: 'apis/user-java/pom.xml'
