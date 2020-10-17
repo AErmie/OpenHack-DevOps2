@@ -34,15 +34,15 @@ stages:
   - job: RunUnitTest
     displayName: Run Unit Tests
     steps:
-      - task: GoTool@0
-        displayName: 'Use GO v1.11.1'
+      - task: GoTool@0
+        displayName: 'Use GO v1.11.1'
         inputs:
-          version: '1.11.1'
-      - task: Go@0
-        displayName: 'Download GO Packages and Dependencies'
+          version: '1.11.1'
+      - task: Go@0
+        displayName: 'Download GO Packages and Dependencies'
         inputs:
-          command: 'get'
-          workingDirectory: 'apis/trips'
+          command: 'get'
+          workingDirectory: 'apis/trips'
       - task: Go@0
         displayName: 'Execute GO Unit Tests'
         inputs:

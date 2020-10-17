@@ -34,23 +34,23 @@ stages:
   - job: RunUnitTest
     displayName: Run Unit Tests
     steps:
-      - task: Npm@1
-        displayName: 'NPM Install'
+      - task: Npm@1
+        displayName: 'NPM Install'
         inputs:
-          command: 'install'
-          workingDir: 'apis/userprofile'
-      - task: Npm@1
-        displayName: 'Execute NPM Unit Tests'
+          command: 'install'
+          workingDir: 'apis/userprofile'
+      - task: Npm@1
+        displayName: 'Execute NPM Unit Tests'
         inputs:
-          command: 'custom'
-          workingDir: 'apis/userprofile'
-          customCommand: 'run test'
-      - task: Npm@1
-        displayName: 'Collect NPM Code Coverage'
+          command: 'custom'
+          workingDir: 'apis/userprofile'
+          customCommand: 'run test'
+      - task: Npm@1
+        displayName: 'Collect NPM Code Coverage'
         inputs:
-          command: 'custom'
-          workingDir: 'apis/userprofile'
-          customCommand: 'run cover'
+          command: 'custom'
+          workingDir: 'apis/userprofile'
+          customCommand: 'run cover'
       
   - job: CreateWorkItem
     displayName: Create Work-Iitem on Unit Test Failure
