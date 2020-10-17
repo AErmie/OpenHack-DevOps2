@@ -1,0 +1,64 @@
+name: USER-PROFILE Unit Testing
+
+trigger:
+  branches:
+    include:
+      - '*'
+    exclude:
+      - main
+      - master
+  paths:
+    include:
+      - apis/userprofile/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+# - stage: BuildImage
+#   displayName: Build USER-PROFILE Container Image
+#   jobs:
+#   - job: DockerBuild
+#     displayName: Docker Build and Push
+#     steps: 
+#     - task: Docker@2
+#       displayName: 'Docker Build and Push'
+#       inputs:
+#         containerRegistry: 'AzContainerRegistry'
+#         repository: 'devopsoh/api-userprofile'
+#         command: 'buildAndPush'
+#         Dockerfile: 'apis/userprofile/Dockerfile'
+- stage: RunUnitTest
+  displayName: Run Unit Tests
+  jobs:  
+  - job: RunUnitTest
+    displayName: Run Unit Tests
+    steps:
+    - task: Npm@1
+      displayName: NPM Install
+      inputs:
+        command: 'install'
+        workingDir: 'apis/userprofile'
+    - task: Npm@1
+      displayName: Execute NPM Unit Tests
+      inputs:
+        command: 'custom'
+        workingDir: 'apis/userprofile'
+        customCommand: 'run test'
+    - task: Npm@1
+      displayName: Collect NPM Code Coverage
+      inputs:
+        command: 'custom'
+        workingDir: 'apis/userprofile'
+        customCommand: 'run cover'
+      
+  - job: CreateWorkItem
+    displayName: Create Work-Iitem on Unit Test Failure
+    dependsOn: RunUnitTest
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Iitem on Unit Test Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Build $(Build.BuildId) failed'
