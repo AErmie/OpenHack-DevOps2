@@ -34,28 +34,28 @@ stages:
   - job: RunUnitTest
     displayName: Run Unit Tests
     steps:
-    - task: Maven@3
-      displayName: 'Build USER-JAVA'
-      inputs:
-        mavenPomFile: 'apis/user-java/pom.xml'
-        publishJUnitResults: false
-        javaHomeOption: 'JDKVersion'
-        mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
-        sonarQubeRunAnalysis: false
-    - task: Maven@3
-      displayName: 'Execute JAVA Unit Tests'
-      inputs:
-        mavenPomFile: 'apis/user-java/pom.xml'
-        goals: 'test'
-        publishJUnitResults: true
-        testResultsFiles: '**/TEST-*.xml'
-        javaHomeOption: 'JDKVersion'
-        mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
-        sonarQubeRunAnalysis: false
+      - task: Maven@3
+        displayName: 'Build USER-JAVA'
+        inputs:
+          mavenPomFile: 'apis/user-java/pom.xml'
+          publishJUnitResults: false
+          javaHomeOption: 'JDKVersion'
+          mavenVersionOption: 'Default'
+          mavenAuthenticateFeed: false
+          effectivePomSkip: false
+          sonarQubeRunAnalysis: false
+      - task: Maven@3
+        displayName: 'Execute JAVA Unit Tests'
+        inputs:
+          mavenPomFile: 'apis/user-java/pom.xml'
+          goals: 'test'
+          publishJUnitResults: true
+          testResultsFiles: '**/TEST-*.xml'
+          javaHomeOption: 'JDKVersion'
+          mavenVersionOption: 'Default'
+          mavenAuthenticateFeed: false
+          effectivePomSkip: false
+          sonarQubeRunAnalysis: false
   - job: CreateWorkItem
     displayName: Create Work-Iitem on Unit Test Failure
     dependsOn: RunUnitTest
