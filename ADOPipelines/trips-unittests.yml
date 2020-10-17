@@ -34,11 +34,11 @@ stages:
   - job: RunUnitTest
     displayName: Run Unit Tests
     steps:
-      - task: GoTool@0
+      - task: GoTool@0
         displayName: 'Use GO v1.11.1'
         inputs:
           version: '1.11.1'
-      - task: Go@0
+      - task: Go@0
         displayName: 'Download GO Packages and Dependencies'
         inputs:
           command: 'get'
