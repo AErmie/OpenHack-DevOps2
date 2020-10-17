@@ -1,0 +1,89 @@
+name: POI (Point Of Interests) Unit Testing
+
+trigger:
+  branches:
+    include:
+      - '*'
+    exclude:
+      - main
+      - master     
+  paths:
+    include:
+      - apis/poi/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+# - stage: BuildImage
+#   displayName: Build POI Container Image
+#   jobs:
+#   - job: DockerBuild
+#     displayName: Docker Build and Push
+#     steps: 
+#     - task: Docker@2
+#       displayName: 'Docker Build and Push'
+#       inputs:
+#         containerRegistry: 'AzContainerRegistry'
+#         repository: 'devopsoh/api-poi'
+#         command: 'buildAndPush'
+#         Dockerfile: 'apis/poi/web/Dockerfile'
+- stage: BuildEnv
+  displayName: .NET Setup, Restore, and Build
+  jobs:
+  - job: BuildEnv
+    displayName: .NET Build Environment
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Installing .NET 5.0.x into environment'  
+      inputs:
+        version: '5.0.x'
+        includePreviewVersions: true # Required for preview versions
+    - task: UseDotNet@2
+      displayName: 'Installing .NET 3.0.x into environment'  
+      inputs:
+        version: '3.0.x'
+        packageType: runtime
+
+  - job: RestoreDependencies
+    displayName: Restore Dependencies
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Restoring project dependencies'  
+      inputs:
+        command: 'restore'
+        feedsToUse: 'select'
+        projects: 'apis/poi/poi.sln'
+
+  - job: BuildProj
+    displayName: Build Project
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Build .NET Project'  
+      inputs:
+        command: 'build'
+        projects: 'apis/poi/poi.sln'
+
+- stage: UnitTests
+  displayName: Execute Unit Tests
+  jobs:
+  - job: UnitTest
+    displayName: POI Unit Tests
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: Running Unit Tests
+      inputs:
+        command: 'test'
+        arguments: '--logger:trx'
+        projects: 'apis/poi/tests/UnitTests/UnitTests.csproj'
+        publishTestResults: true
+  - job: CreateWorkItem
+    displayName: Create Work-Item (on failure)
+    dependsOn: UnitTest
+    condition: failed()
+    steps:
+    - task: CreateWorkItem@1
+      displayName: 'Create work item on test failure'
+      inputs:
+        workItemType: Issue
+        title: 'Build $(Build.BuildId) failed'
