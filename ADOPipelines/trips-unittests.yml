@@ -42,7 +42,7 @@ stages:
         displayName: 'Download GO Packages and Dependencies'
         inputs:
           command: 'get'
-          workingDirectory: 'apis/trips'
+          workingDirectory: 'apis/trips'
       - task: Go@0
         displayName: 'Execute GO Unit Tests'
         inputs:

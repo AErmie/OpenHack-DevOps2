@@ -38,7 +38,7 @@ stages:
         displayName: 'Build USER-JAVA'
         inputs:
           mavenPomFile: 'apis/user-java/pom.xml'
-          publishJUnitResults: false
+          publishJUnitResults: false
           javaHomeOption: 'JDKVersion'
           mavenVersionOption: 'Default'
           mavenAuthenticateFeed: false
