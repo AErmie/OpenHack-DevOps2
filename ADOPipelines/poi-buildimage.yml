@@ -16,6 +16,12 @@ resources:
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  imageName: openhacko291ndk2acr.azurecr.io/devopsoh/api-poi:$(Build.BuildId)
+  azureSubscription: AzInternalSubscription
+  # To ignore SSL error uncomment the following variable
+  # VSTS_ARM_REST_IGNORE_SSL_ERRORS: true 
+
 stages:
 - stage: BuildAndPush
   displayName: Build and Push Container Image
@@ -45,6 +51,18 @@ stages:
           command: push
           tags: |
             $(Build.BuildId)
+  - job: DeployContainer
+    displayName: Deploy Container Image to Azure Web App for Container
+    steps:
+      - task: AzureWebAppContainer@1
+        displayName: Azure Web App for Container
+        inputs:
+          azureSubscription: $(azureSubscription)
+          resourceGroupName: 'openhacko291ndk2rg'
+          appName: 'openhacko291ndk2poi'
+          imageName: $(imageName)
+          deployToSlotOrASE: true
+          slotName: 'staging'
   - job: CreateWorkItem
     displayName: Create Work-Item on Build and Push Failure
     dependsOn: BuildAndPush
