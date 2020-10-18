@@ -7,12 +7,13 @@ resources:
   pipelines:
   - pipeline: 'POI (Point Of Interests) Build Container Image'
     source: 'POI (Point Of Interests) Unit Testing'
-    # trigger: 
-    #   branches:
-    #     include: 
-    #     - releases/*
-    #     exclude:
-    #     - releases/old*
+    trigger: 
+      branches:
+        include: 
+          - main
+          - master
+        exclude:
+          - '*'
 
 pool:
   vmImage: 'ubuntu-latest'
