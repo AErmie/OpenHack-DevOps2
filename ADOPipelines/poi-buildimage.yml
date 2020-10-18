@@ -53,6 +53,8 @@ stages:
             $(Build.BuildId)
   - job: DeployContainer
     displayName: Deploy Container Image to Azure Web App for Container
+    dependsOn: BuildAndPush
+    condition: succeeded() # this job will only run if rununittest fails
     steps:
       - task: AzureWebAppContainer@1
         displayName: Azure Web App for Container
