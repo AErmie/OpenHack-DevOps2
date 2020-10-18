@@ -12,8 +12,6 @@ resources:
         include: 
           - main
           - master
-        exclude:
-          - '*'
 
 pool:
   vmImage: 'ubuntu-latest'
