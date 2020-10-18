@@ -20,7 +20,11 @@ variables:
   imageName: openhacko291ndk2acr.azurecr.io/devopsoh/api-poi:$(Build.BuildId)
   azureSubscription: AzInternalSubscription
   # To ignore SSL error uncomment the following variable
-  # VSTS_ARM_REST_IGNORE_SSL_ERRORS: true 
+  # VSTS_ARM_REST_IGNORE_SSL_ERRORS: true
+  containerRegistry: AzContainerRegistry
+  repository: devopsoh/api-poi
+  resourceGroupName: 'openhacko291ndk2rg'
+  appName: openhacko291ndk2poi
 
 stages:
 - stage: BuildAndPush
@@ -33,11 +37,11 @@ stages:
         displayName: Login to Azure Container Registry (ACR)
         inputs:
           command: login
-          containerRegistry: AzContainerRegistry
+          containerRegistry: $(containerRegistry)
       - task: Docker@2
         displayName: Build Container Image
         inputs:
-          repository: devopsoh/api-poi
+          repository: $(repository)
           command: build
           Dockerfile: 'apis/poi/web/Dockerfile'
           tags: $(Build.BuildId)
@@ -46,8 +50,8 @@ stages:
         displayName: Push Container Image to Azure Container Registry (ACR)
         inputs:
           containerRegistry: |
-            AzContainerRegistry
-          repository: devopsoh/api-poi
+            $(containerRegistry)
+          repository: $(repository)
           command: push
           tags: |
             $(Build.BuildId)
@@ -60,8 +64,8 @@ stages:
         displayName: Azure Web App for Container
         inputs:
           azureSubscription: $(azureSubscription)
-          resourceGroupName: 'openhacko291ndk2rg'
-          appName: 'openhacko291ndk2poi'
+          resourceGroupName: $(resourceGroupName)
+          appName: $(appName)
           imageName: $(imageName)
           deployToSlotOrASE: true
           slotName: 'staging'

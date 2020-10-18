@@ -16,22 +16,32 @@ resources:
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  imageName: openhacko291ndk2acr.azurecr.io/devopsoh/api-trips:$(Build.BuildId)
+  azureSubscription: AzInternalSubscription
+  # To ignore SSL error uncomment the following variable
+  # VSTS_ARM_REST_IGNORE_SSL_ERRORS: true
+  containerRegistry: AzContainerRegistry
+  repository: devopsoh/api-trips
+  resourceGroupName: 'openhacko291ndk2rg'
+  appName: openhacko291ndk2trips
+
 stages:
-- stage: BuildAndPush
+- stage: BuildAndPushStage
   displayName: Build and Push Container Image
   jobs:  
-  - job: BuildAndPush
+  - job: BuildAndPushJob
     displayName: Build and Push Container Image to Azure Container Registry (ACR)
     steps:
       - task: Docker@2
         displayName: Login to Azure Container Registry (ACR)
         inputs:
           command: login
-          containerRegistry: AzContainerRegistry
+          containerRegistry: $(containerRegistry)
       - task: Docker@2
         displayName: Build Container Image
         inputs:
-          repository: devopsoh/api-trips
+          repository: $(repository)
           command: build
           Dockerfile: 'apis/trips/Dockerfile'
           tags: $(Build.BuildId)
@@ -40,14 +50,28 @@ stages:
         displayName: Push Container Image to Azure Container Registry (ACR)
         inputs:
           containerRegistry: |
-            AzContainerRegistry
-          repository: devopsoh/api-trips
+            $(containerRegistry)
+          repository: $(repository)
           command: push
           tags: |
             $(Build.BuildId)
-  - job: CreateWorkItem
+  - job: DeployContainerJob
+    displayName: Deploy Container Image to Azure Web App for Container
+    dependsOn: BuildAndPushJob
+    condition: succeeded() # this job will only run if rununittest fails
+    steps:
+      - task: AzureWebAppContainer@1
+        displayName: Azure Web App for Container
+        inputs:
+          azureSubscription: $(azureSubscription)
+          resourceGroupName: $(resourceGroupName)
+          appName: $(appName)
+          imageName: $(imageName)
+          deployToSlotOrASE: true
+          slotName: 'staging'
+  - job: CreateWorkItemJob
     displayName: Create Work-Item on Build and Push Failure
-    dependsOn: BuildAndPush
+    dependsOn: BuildAndPushJob
     condition: failed() # this job will only run if rununittest fails
     steps:
       - task: CreateWorkItem@1
