@@ -53,7 +53,7 @@ stages:
           command: 'test'
           projects: 'apis/poi/tests/UnitTests/UnitTests.csproj'
           arguments: '--logger:trx --collect "Code coverage"'
-  - job: CreateWorkItem
+  - job: CreateWorkItemUnitTest
     displayName: Create Work-Item on Unit Test Failure
     dependsOn: RunUnitTestJob
     condition: failed() # this job will only run if RunUnitTest fails
@@ -93,6 +93,16 @@ stages:
           command: push
           tags: |
             $(Build.BuildId)
+  - job: CreateWorkItemBuildAndPush
+    displayName: Create Work-Item on Build and Push Failure
+    dependsOn: BuildAndPushJob
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Build and Push Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Build and Push $(Build.BuildId) failed'
 - stage: DeployContainerStage
   displayName: Deploy Container Image
   dependsOn: BuildAndPushStage
@@ -110,17 +120,7 @@ stages:
           imageName: $(imageName)
           deployToSlotOrASE: true
           slotName: 'staging'
-  - job: CreateWorkItem
-    displayName: Create Work-Item on Build and Push Failure
-    dependsOn: BuildAndPushJob
-    condition: failed() # this job will only run if rununittest fails
-    steps:
-      - task: CreateWorkItem@1
-        displayName: Create Work-Item on Build and Push Failure
-        inputs:
-          workItemType: 'Issue'
-          title: 'Build and Push $(Build.BuildId) failed'
-  - job: CreateWorkItem
+  - job: CreateWorkItemContainerDeploy
     displayName: Create Work-Item on Deploy Container Failure
     dependsOn: DeployContainerJob
     condition: failed() # this job will only run if rununittest fails
