@@ -1,0 +1,57 @@
+name: USER-JAVA Build Container Image
+
+trigger: none
+
+# this is being defined in app-ci pipeline
+resources:
+  pipelines:
+  - pipeline: 'USER-JAVA Build Container Image'
+    source: 'USER-JAVA Unit Testing'
+    trigger: 
+      branches:
+        include: 
+          - main
+          - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: BuildAndPush
+  displayName: Build and Push Container Image
+  jobs:  
+  - job: BuildAndPush
+    displayName: Build and Push Container Image to Azure Container Registry (ACR)
+    steps:
+      - task: Docker@2
+        displayName: Login to Azure Container Registry (ACR)
+        inputs:
+          command: login
+          containerRegistry: AzContainerRegistry
+      - task: Docker@2
+        displayName: Build Container Image
+        inputs:
+          repository: devopsoh/api-user-java
+          command: build
+          Dockerfile: 'apis/user-java/Dockerfile'
+          tags: $(Build.BuildId)
+          # arguments: --secret id=mysecret,src=mysecret.txt
+      - task: Docker@2
+        displayName: Push Container Image to Azure Container Registry (ACR)
+        inputs:
+          containerRegistry: |
+            AzContainerRegistry
+          repository: devopsoh/api-user-java
+          command: push
+          tags: |
+            $(Build.BuildId)
+  - job: CreateWorkItem
+    displayName: Create Work-Iitem on Build and Push Failure
+    dependsOn: BuildAndPush
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Iitem on Build and Push Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Build and Push $(Build.BuildId) failed'
