@@ -1,0 +1,125 @@
+name: TRIPS End-to-End
+
+trigger:
+  branches:
+    include:
+      - '*'
+    exclude:
+      - main
+      - master     
+  paths:
+    include:
+      - apis/trips/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageName: openhacko291ndk2acr.azurecr.io/devopsoh/api-trips:$(Build.BuildId)
+  azureSubscription: AzInternalSubscription
+  # To ignore SSL error uncomment the following variable
+  # VSTS_ARM_REST_IGNORE_SSL_ERRORS: true 
+  containerRegistry: AzContainerRegistry
+  repository: devopsoh/api-trips
+  resourceGroupName: 'openhacko291ndk2rg'
+  appName: 'openhacko291ndk2trips'
+
+stages:
+- stage: RunUnitTestStage
+  displayName: Run Unit Tests
+  jobs:  
+  - job: RunUnitTestJob
+    displayName: Run Unit Tests
+    steps:
+      - task: GoTool@0
+        displayName: 'Use GO v1.11.1'
+        inputs:
+          version: '1.11.1'
+      - task: Go@0
+        displayName: 'Download GO Packages and Dependencies'
+        inputs:
+          command: 'get'
+          workingDirectory: 'apis/trips'
+      - task: Go@0
+        displayName: 'Execute GO Unit Tests'
+        inputs:
+          command: 'test'
+          arguments: '-v'
+          workingDirectory: 'apis/trips/tests'
+  - job: CreateWorkItemUnitTest
+    displayName: Create Work-Item on Unit Test Failure
+    dependsOn: RunUnitTestJob
+    condition: failed() # this job will only run if RunUnitTest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Unit Test Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Unit Test Build $(Build.BuildId) failed'
+- stage: BuildAndPushStage
+  displayName: Build and Push Container Image
+  dependsOn: RunUnitTestStage
+  condition: succeeded()
+  jobs:  
+  - job: BuildAndPush
+    displayName: Build and Push Container Image to Azure Container Registry (ACR)
+    steps:
+      - task: Docker@2
+        displayName: Login to Azure Container Registry (ACR)
+        inputs:
+          command: login
+          containerRegistry: $(containerRegistry)
+      - task: Docker@2
+        displayName: Build Container Image
+        inputs:
+          repository: $(repository)
+          command: build
+          Dockerfile: 'apis/trips/Dockerfile'
+          tags: $(Build.BuildId)
+          # arguments: --secret id=mysecret,src=mysecret.txt
+      - task: Docker@2
+        displayName: Push Container Image to Azure Container Registry (ACR)
+        inputs:
+          containerRegistry: |
+            $(containerRegistry)
+          repository: $(repository)
+          command: push
+          tags: |
+            $(Build.BuildId)
+  - job: CreateWorkItem
+    displayName: Create Work-Item on Build and Push Failure
+    dependsOn: BuildAndPush
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Build and Push Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Build and Push $(Build.BuildId) failed'
+- stage: DeployContainerStage
+  displayName: Deploy Container Image
+  dependsOn: BuildAndPushStage
+  condition: succeeded()
+  jobs:
+  - job: DeployContainerJob
+    displayName: Deploy Container Image to Azure Web App for Container
+    steps:
+      - task: AzureWebAppContainer@1
+        displayName: Azure Web App for Container
+        inputs:
+          azureSubscription: $(azureSubscription)
+          resourceGroupName: $(resourceGroupName)
+          appName: $(appName)
+          imageName: $(imageName)
+          deployToSlotOrASE: true
+          slotName: 'staging'
+  - job: CreateWorkItemContainerDeploy
+    displayName: Create Work-Item on Deploy Container Failure
+    dependsOn: DeployContainerJob
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Deploy Container Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Deploy Container $(Build.BuildId) failed'          
