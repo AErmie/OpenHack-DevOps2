@@ -37,12 +37,12 @@ stages:
           arguments: '-v'
           workingDirectory: 'apis/trips/tests'
   - job: CreateWorkItem
-    displayName: Create Work-Iitem on Unit Test Failure
+    displayName: Create Work-Item on Unit Test Failure
     dependsOn: RunUnitTest
     condition: failed() # this job will only run if rununittest fails
     steps:
       - task: CreateWorkItem@1
-        displayName: Create Work-Iitem on Unit Test Failure
+        displayName: Create Work-Item on Unit Test Failure
         inputs:
           workItemType: 'Issue'
           title: 'Build $(Build.BuildId) failed'

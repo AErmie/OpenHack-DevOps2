@@ -46,12 +46,12 @@ stages:
           tags: |
             $(Build.BuildId)
   - job: CreateWorkItem
-    displayName: Create Work-Iitem on Build and Push Failure
+    displayName: Create Work-Item on Build and Push Failure
     dependsOn: BuildAndPush
     condition: failed() # this job will only run if rununittest fails
     steps:
       - task: CreateWorkItem@1
-        displayName: Create Work-Iitem on Build and Push Failure
+        displayName: Create Work-Item on Build and Push Failure
         inputs:
           workItemType: 'Issue'
           title: 'Build and Push $(Build.BuildId) failed'
