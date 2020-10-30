@@ -193,10 +193,13 @@ stages:
       inputs:
         # notifyUsers: 'usr'
         instructions: 'Confirm if rollback is required. If required, choose "Resume", if not, choose "Reject".'
+  - job: ExecuteRollback
+    displayName: Walmart Rollback
+    dependsOn: ReverseSwapSlotJob
+    condition: succeeded()
+    steps:
     - task: AzureAppServiceManage@0
       displayName: Execute rollback
-      dependsOn: ManualValidation
-      condition: resume()
       inputs:
         azureSubscription: $(azureSubscription)
         Action: 'Swap Slots'
