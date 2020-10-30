@@ -129,4 +129,17 @@ stages:
         displayName: Create Work-Item on Deploy Container Failure
         inputs:
           workItemType: 'Issue'
-          title: 'Deploy Container $(Build.BuildId) failed'          
+          title: 'Deploy Container $(Build.BuildId) failed'
+- stage: ValidateStagingDeploymentStage
+  displayName: Validate Staging Deployment
+  dependsOn: DeployContainerStage
+  condition: succeeded()
+  jobs:
+  - job: URIPolling
+    displayName: Polling with PowerShell
+    steps:
+    - task: PowerShell@2
+      inputs:
+        filePath: 'ADOPipelines/polling.ps1'
+        arguments: '-Uri https://openhacko291ndk2poi-staging.azurewebsites.net -displayUri $true'
+        workingDirectory: '/ADOPipelines'
