@@ -142,4 +142,4 @@ stages:
       inputs:
         filePath: 'ADOPipelines/polling.ps1'
         arguments: '-Uri https://openhacko291ndk2poi-staging.azurewebsites.net -displayUri $true'
-        workingDirectory: '/ADOPipelines'
+        # workingDirectory: '/ADOPipelines'
