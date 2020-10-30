@@ -23,6 +23,8 @@ variables:
   repository: devopsoh/api-poi
   resourceGroupName: 'openhacko291ndk2rg'
   appName: 'openhacko291ndk2poi'
+  # stagingURL: 'https://$(appName)-staging.azurewebsites.net'
+  stagingURL: 'https://github.com/Azure-Samples/openhack-devops-proctor' # Valid/pass test URL
 
 stages:
 - stage: RunUnitTestStage
@@ -141,5 +143,73 @@ stages:
     - task: PowerShell@2
       inputs:
         filePath: 'ADOPipelines/polling.ps1'
-        arguments: '-Uri https://openhacko291ndk2poi-staging.azurewebsites.net -displayUri $true'
+        arguments: '-Uri $(stagingURL) -displayUri $true'
         # workingDirectory: '/ADOPipelines'
+  - job: CreateWorkItemValidateStagingDeployment
+    displayName: Create Work-Item on Staging Validation Failure
+    dependsOn: URIPolling
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Staging Validation Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Staging Validation $(Build.BuildId) failed'
+- stage: SwapSlotStage
+  displayName: Swap Staging Slot with Production
+  dependsOn: ValidateStagingDeploymentStage
+  condition: succeededOrFailed()
+  jobs:
+  - job: SwapSlotJob
+    displayName: Swapping Slots (Staging with Production)
+    steps:
+    - task: AzureAppServiceManage@0
+      inputs:
+        azureSubscription: $(azureSubscription)
+        Action: 'Swap Slots'
+        WebAppName: $(appName)
+        ResourceGroupName: $(resourceGroupName)
+        SourceSlot: 'staging'
+  - job: CreateWorkItemSwapSlot
+    displayName: Create Work-Item on Slot Swapping Failure
+    dependsOn: SwapSlotJob
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Slot Swapping Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Slot Swap $(Build.BuildId) failed'
+- stage: ReverseSwapSlotStage
+  displayName: Reverse Swap Staging Slot with Production
+  dependsOn: ValidateStagingDeploymentStage
+  condition: succeeded()
+  jobs:
+  - job: ReverseSwapSlotJob
+    displayName: Reverse Swapping Slots (Staging with Production)
+    steps:
+    - task: ManualValidation@0
+      displayName: Is Rollback Required?
+      inputs:
+        # notifyUsers: 'usr'
+        instructions: 'Confirm if rollback is required. If required, choose "Resume", if not, choose "Reject".'
+    - task: AzureAppServiceManage@0
+      displayName: Execute rollback
+      dependsOn: ManualValidation
+      condition: resume()
+      inputs:
+        azureSubscription: $(azureSubscription)
+        Action: 'Swap Slots'
+        WebAppName: $(appName)
+        ResourceGroupName: $(resourceGroupName)
+        SourceSlot: 'production'
+  - job: CreateWorkItemReverseSwapSlot
+    displayName: Create Work-Item on Reverse Slot Swapping Failure
+    dependsOn: ReverseSwapSlotJob
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Reverse Slot Swapping Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Reverse Slot Swap $(Build.BuildId) failed'
