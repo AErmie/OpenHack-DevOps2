@@ -291,16 +291,16 @@ stages:
         # Uploadfilechk: true
         # inputallfiles: 'uploadscript'
         showtaillog: true
-  - job: CreateWorkItemSwapSlot
-    displayName: Create Work-Item on Slot Swapping Failure
-    dependsOn: SwapSlotJob
+  - job: CreateWorkItemLoadTest
+    displayName: Create Work-Item on Lead Testing Failure
+    dependsOn: LoadTestJob
     condition: failed() # this job will only run if rununittest fails
     steps:
       - task: CreateWorkItem@1
-        displayName: Create Work-Item on Slot Swapping Failure
+        displayName: Create Work-Item on Load Testing Failure
         inputs:
           workItemType: 'Issue'
-          title: 'Slot Swap $(Build.BuildId) failed'
+          title: 'Load Testing $(Build.BuildId) failed'
 - stage: SwapSlotStage
   displayName: Swap Staging Slot with Production
   dependsOn: LoadTestingStage
