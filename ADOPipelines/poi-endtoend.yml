@@ -85,13 +85,15 @@ stages:
   jobs:  
   - job: VariantAnalysisJob
     displayName: Run CodeQL Variant Analysis
+    pool:
+      vmImage: 'windows-latest'
     steps:
     - task: Semmle@0
       inputs:
         sourceCodeDirectory: '$(Build.SourcesDirectory)'
         language: 'csharp' # Opitons: csharp [C#], cpp [C/C++ Preview], tsandjs [TypeScript + JavaScript], java
-        cleanupBuildCommands: '' # The commands to run for build cleanup before building the snapshot. Multiple commands are delimited by # or new line.
-        buildCommands: '' # The build commands to run when building the snapshot. Multiple commands are delimited by # or new line.
+        # cleanupBuildCommands: '' # The commands to run for build cleanup before building the snapshot. Multiple commands are delimited by # or new line.
+        # buildCommands: '' # The build commands to run when building the snapshot. Multiple commands are delimited by # or new line.
         querySuite: 'Recommended'
         timeout: '1800'
         ram: '16384'
@@ -108,6 +110,8 @@ stages:
           title: 'Variant Analysis Build $(Build.BuildId) failed'
 - stage: RunUnitTestStage
   displayName: Run Unit Tests
+  dependsOn: VariantAnalysisStage
+  condition: succeededOrFailed()
   jobs:  
   - job: RunUnitTestJob
     displayName: Run Unit Tests
@@ -259,6 +263,8 @@ stages:
   jobs:
   - job: URIPolling
     displayName: Polling with PowerShell
+    pool:
+      vmImage: 'windows-latest'
     steps:
     - task: PowerShell@2
       inputs:
