@@ -15,16 +15,22 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  imageName: openhacko291ndk2acr.azurecr.io/devopsoh/api-poi:$(Build.BuildId)
-  azureSubscription: AzInternalSubscription
-  # To ignore SSL error uncomment the following variable
-  # VSTS_ARM_REST_IGNORE_SSL_ERRORS: true 
-  containerRegistry: AzContainerRegistry
-  repository: devopsoh/api-poi
-  resourceGroupName: 'openhacko291ndk2rg'
-  appName: 'openhacko291ndk2poi'
-  # stagingURL: 'https://$(appName)-staging.azurewebsites.net'
-  stagingURL: 'https://github.com/Azure-Samples/openhack-devops-proctor' # Valid/pass test URL
+  - group: SensitiveVariables
+  - name: imageName
+    value: openhacko291ndk2acr.azurecr.io/devopsoh/api-poi:$(Build.BuildId)
+  - name: azureSubscription
+    value: AzInternalSubscription
+  - name: containerRegistry
+    value: AzContainerRegistry
+  - name: repository
+    value: devopsoh/api-poi
+  - name: resourceGroupName
+    value: openhacko291ndk2rg
+  - name: appName
+    value: openhacko291ndk2poi
+  - name: stagingURL
+    value: https://github.com/Azure-Samples/openhack-devops-proctor
+    # stagingURL: 'https://$(appName)-staging.azurewebsites.net'
 
 stages:
 - stage: DependencyScanStage
@@ -38,7 +44,7 @@ stages:
         inputs:
           cwd: 'apis/poi' # Root work directory: Working directory where WhiteSource is run. Defaults to the root of the source working directory.
           advance: true # Check for advance settings.
-          exclude: 'tests/*' # Exclude: List of exclude folders separated by space. Folder path is relative to 'Work directory' parameter.
+          exclude: 'tests' # Exclude: List of exclude folders separated by space. Folder path is relative to 'Work directory' parameter.
           # extraFolders: 'ExtraFolders' # Extra folders: List of extra folders to scan separated by space. Path is relative to 'Work directory' parameter.
   - job: CreateWorkItemDependencyScan
     displayName: Create Work-Item on Dependency Scan Failure
@@ -50,6 +56,56 @@ stages:
         inputs:
           workItemType: 'Issue'
           title: 'Dependency Scan Build $(Build.BuildId) failed'
+- stage: CodeCoverageStage
+  displayName: Code Coverage Check
+  jobs:  
+  - job: CodeCoverageJob
+    displayName: Run Code Coverage Check
+    steps:
+    - task: SonarCloudPrepare@1
+      displayName: Prepare Analysis Configuration
+      inputs:
+        SonarCloud: 'SonarCloud'
+        organization: 'adinermie'
+        scannerMode: 'MSBuild'
+        projectKey: 'openhacko291ndk2'
+        projectName: 'OpenHack-DevOps'
+  - job: CreateWorkItemCodeCoverage
+    displayName: Create Work-Item on Code Coverage Failure
+    dependsOn: CodeCoverageJob
+    condition: failed()
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Code Coverage Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Code Coverage Build $(Build.BuildId) failed'
+- stage: VariantAnalysisStage
+  displayName: Variant Analysis
+  jobs:  
+  - job: VariantAnalysisJob
+    displayName: Run CodeQL Variant Analysis
+    steps:
+    - task: Semmle@0
+      inputs:
+        sourceCodeDirectory: '$(Build.SourcesDirectory)'
+        language: 'csharp' # Opitons: csharp [C#], cpp [C/C++ Preview], tsandjs [TypeScript + JavaScript], java
+        cleanupBuildCommands: '' # The commands to run for build cleanup before building the snapshot. Multiple commands are delimited by # or new line.
+        buildCommands: '' # The build commands to run when building the snapshot. Multiple commands are delimited by # or new line.
+        querySuite: 'Recommended'
+        timeout: '1800'
+        ram: '16384'
+        addProjectDirToScanningExclusionList: true
+  - job: CreateWorkItemCodeCoverage
+    displayName: Create Work-Item on Variant Analysis Failure
+    dependsOn: VariantAnalysisJob
+    condition: failed()
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Variant Analysis Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Variant Analysis Build $(Build.BuildId) failed'
 - stage: RunUnitTestStage
   displayName: Run Unit Tests
   jobs:  
@@ -78,6 +134,12 @@ stages:
           command: 'test'
           projects: 'apis/poi/tests/UnitTests/UnitTests.csproj'
           arguments: '--logger:trx --collect "Code coverage"'
+      - task: SonarCloudAnalyze@1
+        displayName: Run SonarCloud Code Analysis
+      - task: SonarCloudPublish@1
+        displayName: Publish SonarClode Quality Gate Results
+        inputs:
+          pollingTimeoutSec: '300'
   - job: CreateWorkItemUnitTest
     displayName: Create Work-Item on Unit Test Failure
     dependsOn: RunUnitTestJob
@@ -88,6 +150,41 @@ stages:
         inputs:
           workItemType: 'Issue'
           title: 'Unit Test Build $(Build.BuildId) failed'
+  - job: RunIntegrationTestJob
+    displayName: Run Integration Tests
+    steps:
+      - task: UseDotNet@2
+        displayName: Install .NET SKD 2.1.x
+        inputs:
+          packageType: 'sdk'
+          version: '2.1.504'
+      - task: DotNetCoreCLI@2
+        displayName: Restore Project Dependencies
+        inputs:
+          command: 'restore'
+          projects: 'apis/poi/poi.sln'
+          feedsToUse: 'select'
+      - task: DotNetCoreCLI@2
+        displayName: Build Solution
+        inputs:
+          command: 'build'
+          projects: 'apis/poi/poi.sln'
+      - task: DotNetCoreCLI@2
+        displayName: Execute .NET Unit Tests
+        inputs:
+          command: 'test'
+          projects: 'apis/poi/tests/IntegrationTests/IntegrationTests.csproj'
+          arguments: '--logger:trx --collect "Code coverage"'
+  - job: CreateWorkItemIntegrationTest
+    displayName: Create Work-Item on Integration Test Failure
+    dependsOn: RunIntegrationTestJob
+    condition: failed()
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Integration Test Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Integration Test Build $(Build.BuildId) failed'
 - stage: BuildAndPushStage
   displayName: Build and Push Container Image
   dependsOn: RunUnitTestStage
@@ -178,10 +275,36 @@ stages:
         inputs:
           workItemType: 'Issue'
           title: 'Staging Validation $(Build.BuildId) failed'
+- stage: LoadTestingStage
+  displayName: Initiate Load Testing
+  dependsOn: ValidateStagingDeploymentStage
+  condition: succeeded()
+  jobs:
+  - job: LoadTestJob
+    displayName: Load Testing
+    steps:
+    - task: BlazeMeter Integration@1
+      inputs:
+        testurl: $(stagingURL)
+        apikey: $(BlazeMeter_APIKeyID)
+        apisecret: $(BlazeMeter_APIKeySecret)
+        # Uploadfilechk: true
+        # inputallfiles: 'uploadscript'
+        showtaillog: true
+  - job: CreateWorkItemSwapSlot
+    displayName: Create Work-Item on Slot Swapping Failure
+    dependsOn: SwapSlotJob
+    condition: failed() # this job will only run if rununittest fails
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Slot Swapping Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Slot Swap $(Build.BuildId) failed'
 - stage: SwapSlotStage
   displayName: Swap Staging Slot with Production
-  dependsOn: ValidateStagingDeploymentStage
-  condition: succeededOrFailed()
+  dependsOn: LoadTestingStage
+  condition: succeeded()
   jobs:
   - job: SwapSlotJob
     displayName: Swapping Slots (Staging with Production)
