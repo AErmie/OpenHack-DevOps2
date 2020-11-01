@@ -27,6 +27,29 @@ variables:
   stagingURL: 'https://github.com/Azure-Samples/openhack-devops-proctor' # Valid/pass test URL
 
 stages:
+- stage: DependencyScanStage
+  displayName: Dependency Scanning
+  jobs:  
+  - job: DependencyScanJob
+    displayName: Run Dependency Scan
+    steps:
+      - task: WhiteSource Bolt@20
+        displayName: Running WhiteSource Bolt Checks
+        inputs:
+          cwd: 'apis/poi' # Root work directory: Working directory where WhiteSource is run. Defaults to the root of the source working directory.
+          advance: true # Check for advance settings.
+          exclude: 'tests/*' # Exclude: List of exclude folders separated by space. Folder path is relative to 'Work directory' parameter.
+          # extraFolders: 'ExtraFolders' # Extra folders: List of extra folders to scan separated by space. Path is relative to 'Work directory' parameter.
+  - job: CreateWorkItemDependencyScan
+    displayName: Create Work-Item on Dependency Scan Failure
+    dependsOn: DependencyScanJob
+    condition: failed()
+    steps:
+      - task: CreateWorkItem@1
+        displayName: Create Work-Item on Dependency Scan Failure
+        inputs:
+          workItemType: 'Issue'
+          title: 'Dependency Scan Build $(Build.BuildId) failed'
 - stage: RunUnitTestStage
   displayName: Run Unit Tests
   jobs:  
