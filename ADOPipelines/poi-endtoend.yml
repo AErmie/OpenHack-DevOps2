@@ -70,6 +70,12 @@ stages:
         scannerMode: 'MSBuild'
         projectKey: 'openhacko291ndk2'
         projectName: 'OpenHack-DevOps'
+    - task: SonarCloudAnalyze@1
+      displayName: Run SonarCloud Code Analysis
+    - task: SonarCloudPublish@1
+      displayName: Publish SonarClode Quality Gate Results
+      inputs:
+        pollingTimeoutSec: '300'
   - job: CreateWorkItemCodeCoverage
     displayName: Create Work-Item on Code Coverage Failure
     dependsOn: CodeCoverageJob
@@ -80,37 +86,37 @@ stages:
         inputs:
           workItemType: 'Issue'
           title: 'Code Coverage Build $(Build.BuildId) failed'
-- stage: VariantAnalysisStage
-  displayName: Variant Analysis
-  jobs:  
-  - job: VariantAnalysisJob
-    displayName: Run CodeQL Variant Analysis
-    pool:
-      vmImage: 'windows-latest'
-    steps:
-    - task: Semmle@0
-      inputs:
-        sourceCodeDirectory: '$(Build.SourcesDirectory)'
-        language: 'csharp' # Opitons: csharp [C#], cpp [C/C++ Preview], tsandjs [TypeScript + JavaScript], java
-        # cleanupBuildCommands: '' # The commands to run for build cleanup before building the snapshot. Multiple commands are delimited by # or new line.
-        # buildCommands: '' # The build commands to run when building the snapshot. Multiple commands are delimited by # or new line.
-        querySuite: 'Recommended'
-        timeout: '1800'
-        ram: '16384'
-        addProjectDirToScanningExclusionList: true
-  - job: CreateWorkItemCodeCoverage
-    displayName: Create Work-Item on Variant Analysis Failure
-    dependsOn: VariantAnalysisJob
-    condition: failed()
-    steps:
-      - task: CreateWorkItem@1
-        displayName: Create Work-Item on Variant Analysis Failure
-        inputs:
-          workItemType: 'Issue'
-          title: 'Variant Analysis Build $(Build.BuildId) failed'
+# - stage: VariantAnalysisStage
+#   displayName: Variant Analysis
+#   jobs:  
+#   - job: VariantAnalysisJob
+#     displayName: Run CodeQL Variant Analysis
+#     pool:
+#       vmImage: 'windows-latest'
+#     steps:
+#     - task: Semmle@0
+#       inputs:
+#         sourceCodeDirectory: '$(Build.SourcesDirectory)'
+#         language: 'csharp' # Opitons: csharp [C#], cpp [C/C++ Preview], tsandjs [TypeScript + JavaScript], java
+#         # cleanupBuildCommands: '' # The commands to run for build cleanup before building the snapshot. Multiple commands are delimited by # or new line.
+#         # buildCommands: '' # The build commands to run when building the snapshot. Multiple commands are delimited by # or new line.
+#         querySuite: 'Recommended'
+#         timeout: '1800'
+#         ram: '16384'
+#         addProjectDirToScanningExclusionList: true
+#   - job: CreateWorkItemCodeCoverage
+#     displayName: Create Work-Item on Variant Analysis Failure
+#     dependsOn: VariantAnalysisJob
+#     condition: failed()
+#     steps:
+#       - task: CreateWorkItem@1
+#         displayName: Create Work-Item on Variant Analysis Failure
+#         inputs:
+#           workItemType: 'Issue'
+#           title: 'Variant Analysis Build $(Build.BuildId) failed'
 - stage: RunUnitTestStage
   displayName: Run Unit Tests
-  dependsOn: VariantAnalysisStage
+  dependsOn: CodeCoverageStage
   condition: succeededOrFailed()
   jobs:  
   - job: RunUnitTestJob
@@ -138,12 +144,12 @@ stages:
           command: 'test'
           projects: 'apis/poi/tests/UnitTests/UnitTests.csproj'
           arguments: '--logger:trx --collect "Code coverage"'
-      - task: SonarCloudAnalyze@1
-        displayName: Run SonarCloud Code Analysis
-      - task: SonarCloudPublish@1
-        displayName: Publish SonarClode Quality Gate Results
-        inputs:
-          pollingTimeoutSec: '300'
+      # - task: SonarCloudAnalyze@1
+      #   displayName: Run SonarCloud Code Analysis
+      # - task: SonarCloudPublish@1
+      #   displayName: Publish SonarClode Quality Gate Results
+      #   inputs:
+      #     pollingTimeoutSec: '300'
   - job: CreateWorkItemUnitTest
     displayName: Create Work-Item on Unit Test Failure
     dependsOn: RunUnitTestJob
@@ -307,31 +313,55 @@ stages:
         inputs:
           workItemType: 'Issue'
           title: 'Load Testing $(Build.BuildId) failed'
-- stage: SwapSlotStage
-  displayName: Swap Staging Slot with Production
+# - stage: SwapSlotStage
+#   displayName: Swap Staging Slot with Production
+#   dependsOn: LoadTestingStage
+#   condition: succeeded()
+#   jobs:
+#   - job: SwapSlotJob
+#     displayName: Swapping Slots (Staging with Production)
+#     steps:
+#     - task: AzureAppServiceManage@0
+#       inputs:
+#         azureSubscription: $(azureSubscription)
+#         Action: 'Swap Slots'
+#         WebAppName: $(appName)
+#         ResourceGroupName: $(resourceGroupName)
+#         SourceSlot: 'staging'
+#   - job: CreateWorkItemSwapSlot
+#     displayName: Create Work-Item on Slot Swapping Failure
+#     dependsOn: SwapSlotJob
+#     condition: failed() # this job will only run if rununittest fails
+#     steps:
+#       - task: CreateWorkItem@1
+#         displayName: Create Work-Item on Slot Swapping Failure
+#         inputs:
+#           workItemType: 'Issue'
+#           title: 'Slot Swap $(Build.BuildId) failed'
+- stage: PhasedRolloutStage
+  displayName: Phased Rollout
   dependsOn: LoadTestingStage
   condition: succeeded()
   jobs:
-  - job: SwapSlotJob
-    displayName: Swapping Slots (Staging with Production)
+  - job: CanaryDeploymentJob
+    displayName: Canary Deployment
     steps:
-    - task: AzureAppServiceManage@0
+    - task: AzureCLI@2
       inputs:
-        azureSubscription: $(azureSubscription)
-        Action: 'Swap Slots'
-        WebAppName: $(appName)
-        ResourceGroupName: $(resourceGroupName)
-        SourceSlot: 'staging'
-  - job: CreateWorkItemSwapSlot
-    displayName: Create Work-Item on Slot Swapping Failure
-    dependsOn: SwapSlotJob
+        azureSubscription: 'AzInternalSubscription'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: 'az webapp traffic-routing set staging=50 --name $(appName) --resource-group $(resourceGroupName)'
+  - job: CreateWorkItemCanaryDeployment
+    displayName: Create Work-Item on Canary Deployment Failure
+    dependsOn: CanaryDeploymentJob
     condition: failed() # this job will only run if rununittest fails
     steps:
       - task: CreateWorkItem@1
-        displayName: Create Work-Item on Slot Swapping Failure
+        displayName: Create Work-Item on Canary Deployment Failure
         inputs:
           workItemType: 'Issue'
-          title: 'Slot Swap $(Build.BuildId) failed'
+          title: 'Canary Deployment $(Build.BuildId) failed'
 # - stage: ReverseSwapSlotStage
 #   displayName: Reverse Swap Staging Slot with Production
 #   dependsOn: ValidateStagingDeploymentStage
