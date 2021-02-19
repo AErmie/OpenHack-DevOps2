@@ -1,4 +1,6 @@
 [![Whitesource Security Scan Example](https://github.com/AErmie/OpenHack-DevOps2/actions/workflows/whiteSource.yml/badge.svg)](https://github.com/AErmie/OpenHack-DevOps2/actions/workflows/whiteSource.yml)
+[![CodeQL](https://github.com/AErmie/OpenHack-DevOps2/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/AErmie/OpenHack-DevOps2/actions/workflows/codeql-analysis.yml)
+[![Sonar Cloud](https://github.com/AErmie/OpenHack-DevOps2/actions/workflows/sonarCloud.yml/badge.svg)](https://github.com/AErmie/OpenHack-DevOps2/actions/workflows/sonarCloud.yml)
 
 # Project Name
 
