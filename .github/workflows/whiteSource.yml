@@ -1,0 +1,28 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Whitesource Security Scan Example
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Run Whitesource Action
+      uses: TheAxZim/Whitesource-Scan-Action@v1.0.0
+      with:
+        wssUrl: https://app-eu.whitesourcesoftware.com/agent
+        apiKey: ${{ secrets.WSS_API_KEY }}
+        productName: 'DevOps2.0'
+        projectName: 'OpenHack-DevOps2.0'
